@@ -4,9 +4,19 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start:contract": "npx hardhat compile",
+    "start:server": "cd server && npm start",
+    "start:app": "cd app && npm start",
+    "start:all": "npm run start:contract && npm run start:server & npm run start:app"
   },
-  "keywords": [],
+  "keywords": [
+    "hardhat",
+    "nodejs",
+    "smart contract",
+    "expressjs",
+    "mongodb"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
@@ -21,6 +31,8 @@
   "dependencies": {
     "dotenv": "^16.4.5",
     "ethers": "^5.7.2",
+    "express": "^4.19.2",
+    "mongodb": "^6.8.0",
     "react": "^18.2.0"
   }
 }
