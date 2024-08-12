@@ -13,7 +13,6 @@ export const getContracts = () => {
     queryKey: ["contracts"],
     queryFn: async () => {
       const response = await axiosInstance.get("/contracts");
-      console.log(response.data.contracts);
       return response.data.contracts;
     },
   };
@@ -23,10 +22,7 @@ export const getContracts = () => {
 export const postContract = () => {
   return {
     mutationFn: async (newContract) => {
-      const contract = await axiosInstance.post("/contracts", {
-        newContract,
-      });
-      console.log({ contract });
+      const contract = await axiosInstance.post("/contracts", newContract);
       return contract;
     },
     onSuccess: () => {
@@ -35,7 +31,7 @@ export const postContract = () => {
   };
 };
 
-//update the aprproval status of a project
+//update the approval status of a project
 export const updateContract = () => {
   return {
     mutatationFn: async (contractId) => {

@@ -2,9 +2,9 @@ import { ethers } from "ethers";
 import { useEffect, useState } from "react";
 import deploy from "./deploy";
 import Escrow from "./Escrow";
+
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getContracts, postContract } from "./queries";
-import { handleApprove } from "./approve";
 
 const provider = new ethers.providers.Web3Provider(window.ethereum);
 
@@ -14,17 +14,12 @@ export async function approve(escrowContract, signer) {
 }
 
 function App() {
-  const [escrows, setEscrows] = useState([]);
   const [account, setAccount] = useState();
   const [signer, setSigner] = useState();
 
   //Fetch
-  const {
-    isLoading: ContractsLoading,
-    // isError,
-    data: escrowContracts,
-    // error: ContractsError,
-  } = useQuery(getContracts());
+  const getAllContractsQuery = useQuery(getContracts());
+  const addNewContractMutation = useMutation(postContract());
 
   useEffect(() => {
     async function getAccounts() {
@@ -37,62 +32,21 @@ function App() {
     getAccounts();
   }, []);
 
-  const { mutate: createContract, IsPending: addContractPending } = useMutation(
-    postContract()
-  );
-
   async function newContract() {
     const beneficiary = document.getElementById("beneficiary").value;
     const arbiter = document.getElementById("arbiter").value;
     const value = ethers.BigNumber.from(
       document.getElementById("ether").value * 1e18
     );
+
     const escrowContract = await deploy(signer, arbiter, beneficiary, value);
 
-    // const escrow = {
-    //   address: escrowContract.address,
-    //   arbiter,
-    //   beneficiary,
-    //   value: value.toString(),
-    //   handleApprove: async () => {
-    //     escrowContract.on("Approved", () => {
-    //       document.getElementById(escrowContract.address).className =
-    //         "complete";
-    //       document.getElementById(escrowContract.address).innerText =
-    //         "✓ It's been approved!";
-    //     });
-
-    //     await approve(escrowContract, signer);
-    //   },
-    // };
-    // setEscrows([...escrows, escrow]);
-
-    // setEscrows(escrows);
-    createContract({
+    addNewContractMutation.mutateAsync({
       arbiter,
       beneficiary,
       value: value.toString(),
       address: escrowContract.address,
     });
-
-    const escrows = escrowContracts
-      ? await Promise.all(
-          escrowContracts.map(async (contract) => {
-            console.log(contract);
-            return {
-              ...contract,
-              handleApprove: await handleApprove(
-                document,
-                approve,
-                escrowContract,
-                signer
-              ),
-            };
-          })
-        )
-      : [];
-
-    setEscrows(escrows);
   }
 
   return (
@@ -127,19 +81,20 @@ function App() {
         </div>
       </div>
 
-      {addContractPending ? <div>Adding contract...</div> : null}
-      {/* {addContractError ? <div>Error Adding Contract...</div> : null} */}
+      {addNewContractMutation.isPending ? <div>Adding contract...</div> : null}
 
-      {ContractsLoading ? (
+      {getAllContractsQuery.isLoading ? (
         <div>Loading...</div>
       ) : (
         <div className="existing-contracts">
-          {escrows.length <= 0 ? (
+          {getAllContractsQuery.data.length <= 0 ? (
             <div>No Contracts Added</div>
           ) : (
             <div id="container">
-              {escrows.map((escrow) => {
-                return <Escrow key={escrow.address} {...escrow} />;
+              {getAllContractsQuery.data.map((escrow) => {
+                return (
+                  <Escrow key={escrow.address} {...escrow} signer={signer} />
+                );
               })}
             </div>
           )}

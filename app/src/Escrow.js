@@ -1,10 +1,25 @@
+import ABI from "./artifacts/contracts/Escrow.sol/Escrow.json";
+import { ethers } from "ethers";
+import { approve } from "./App";
+
 export default function Escrow({
   address,
   arbiter,
   beneficiary,
   value,
-  handleApprove,
+  signer,
 }) {
+  const handleApprove = async () => {
+    const escrowContract = new ethers.Contract(address, ABI.abi, signer);
+    escrowContract.on("Approved", () => {
+      document.getElementById(escrowContract.address).className = "complete";
+      document.getElementById(escrowContract.address).innerText =
+        "✓ It's been approved!";
+    });
+
+    await approve(escrowContract, signer);
+  };
+
   return (
     <div className="existing-contract">
       <ul className="fields">

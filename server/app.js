@@ -27,6 +27,7 @@ app.get("/", async (req, res) => {
 //add the contract to the database
 app.post("/contracts", async (req, res, next) => {
   const { address, beneficiary, arbiter, value } = req.body;
+  console.log("E reach here");
   if (!address || !arbiter || !beneficiary || !value)
     return res
       .status(400)
