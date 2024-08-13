@@ -48,6 +48,7 @@ app.post("/contracts", async (req, res, next) => {
     beneficiary,
     value,
     status: false,
+    refunded: false,
     createdAt: new Date(),
   });
 
@@ -59,7 +60,7 @@ app.post("/contracts", async (req, res, next) => {
 //update the contract in the database using the contract Id
 app.patch("/contracts/:contractId", async (req, res, next) => {
   const { contractId } = req.params;
-  const { status } = req.body;
+  const { status, refunded } = req.body;
 
   if (status == null)
     return res
@@ -74,12 +75,21 @@ app.patch("/contracts/:contractId", async (req, res, next) => {
   }
   const { escrowDb } = dbData;
 
+  let setObject = {};
+  if (status) {
+    setObject.status = status;
+  }
+
+  if (refunded) {
+    setObject.refunded = refunded;
+  }
+
   const contractCollection = escrowDb.collection("contracts");
   const updatedContract = await contractCollection.updateOne(
     { _id: new ObjectId(contractId) },
     {
       $set: {
-        status,
+        ...setObject,
         updatedAt: new Date(),
       },
     }
