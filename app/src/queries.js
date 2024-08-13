@@ -34,13 +34,13 @@ export const postContract = () => {
 //update the approval status of a project
 export const updateContract = () => {
   return {
-    mutatationFn: async (contractId) => {
+    mutationFn: async (contractId) => {
       return await axiosInstance.patch(`/contracts/${contractId}`, {
         status: true,
       });
     },
-    onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: ["contracts"] });
+    onSuccess: () => {
+      queryClient.invalidateQueries(["contracts"]);
     },
   };
 };

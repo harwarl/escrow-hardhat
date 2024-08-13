@@ -1,6 +1,8 @@
 import ABI from "./artifacts/contracts/Escrow.sol/Escrow.json";
 import { ethers } from "ethers";
 import { approve } from "./App";
+import { useMutation } from "@tanstack/react-query";
+import { updateContract } from "./queries";
 
 export default function Escrow({
   address,
@@ -8,7 +10,11 @@ export default function Escrow({
   beneficiary,
   value,
   signer,
+  status,
+  _id,
 }) {
+  const updateContractMutation = useMutation(updateContract);
+
   const handleApprove = async () => {
     const escrowContract = new ethers.Contract(address, ABI.abi, signer);
     escrowContract.on("Approved", () => {
@@ -18,6 +24,8 @@ export default function Escrow({
     });
 
     await approve(escrowContract, signer);
+    //update the status of the contract
+    await updateContractMutation.mutateAsync(_id);
   };
 
   return (
@@ -36,15 +44,17 @@ export default function Escrow({
           <div> {value} </div>
         </li>
         <div
-          className="button"
+          className={status ? "complete" : "button"}
           id={address}
           onClick={(e) => {
             e.preventDefault();
-
-            handleApprove();
+            if (status === false) {
+              handleApprove();
+            }
           }}
+          style={{ cursor: status === true ? "not-allowed" : "pointer" }}
         >
-          Approve
+          {status === true ? "✓ It's been approved!" : "Approve"}
         </div>
       </ul>
     </div>

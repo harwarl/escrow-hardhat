@@ -27,7 +27,6 @@ app.get("/", async (req, res) => {
 //add the contract to the database
 app.post("/contracts", async (req, res, next) => {
   const { address, beneficiary, arbiter, value } = req.body;
-  console.log("E reach here");
   if (!address || !arbiter || !beneficiary || !value)
     return res
       .status(400)
@@ -48,9 +47,9 @@ app.post("/contracts", async (req, res, next) => {
     arbiter,
     beneficiary,
     value,
-    status: true,
+    status: false,
+    createdAt: new Date(),
   });
-  console.log(savedDocument);
 
   return res
     .status(200)
@@ -81,6 +80,7 @@ app.patch("/contracts/:contractId", async (req, res, next) => {
     {
       $set: {
         status,
+        updatedAt: new Date(),
       },
     }
   );
@@ -94,7 +94,7 @@ app.patch("/contracts/:contractId", async (req, res, next) => {
 app.get("/contracts", async (req, res) => {
   let pipeline = [];
   if (req.query.status) {
-    // query.status = req.query.status; //Note that false means the contract is approved and true means not approved
+    // query.status = req.query.status; //Note that true means the contract is approved and false means not approved
     if (["true", "false"].includes(req.query.status)) {
       pipeline.push({
         $match: {
