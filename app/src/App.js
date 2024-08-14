@@ -44,14 +44,51 @@ function App() {
       document.getElementById("ether").value * 1e18
     );
 
-    const escrowContract = await deploy(signer, arbiter, beneficiary, value);
+    // Use toast.promise to handle the toast notifications
+    toast.promise(
+      (async () => {
+        try {
+          const escrowContract = await deploy(
+            signer,
+            arbiter,
+            beneficiary,
+            value
+          );
 
-    addNewContractMutation.mutateAsync({
-      arbiter,
-      beneficiary,
-      value: value.toString(),
-      address: escrowContract.address,
-    });
+          // Save the new contract details
+          await addNewContractMutation.mutateAsync({
+            arbiter,
+            beneficiary,
+            value: value.toString(),
+            address: escrowContract.address,
+          });
+
+          return escrowContract.address;
+        } catch ({ error }) {
+          console.log({ error });
+          if (error.code === 4001) {
+            throw new Error("Transaction rejected by user");
+          } else if (error.code === -32000) {
+            throw new Error("Insufficient funds for gas or transaction value");
+          } else {
+            throw new Error(error.message || "An unknown error occurred");
+          }
+        }
+      })(),
+      {
+        pending: "Deploying contract...",
+        success: {
+          render({ data }) {
+            return `Contract deployed at address: ${data.error}`;
+          },
+        },
+        error: {
+          render({ data }) {
+            return `Failed to deploy contract: ${data.message}`;
+          },
+        },
+      }
+    );
   }
 
   return (
@@ -106,8 +143,8 @@ function App() {
           )}
         </div>
       )}
-      {/* <ToastContainer
-        position="top-right"
+      <ToastContainer
+        position="bottom-right"
         autoClose={5000}
         hideProgressBar={false}
         newestOnTop={false}
@@ -117,7 +154,7 @@ function App() {
         draggable
         pauseOnHover
         theme="light"
-      /> */}
+      />
     </>
   );
 }

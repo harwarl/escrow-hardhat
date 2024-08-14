@@ -3,7 +3,9 @@ import { ethers } from "ethers";
 import { approve, refund } from "./App";
 import { useMutation } from "@tanstack/react-query";
 import { updateContract } from "./queries";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { convertDate } from "./convertDate";
+import { toast } from "react-toastify";
 
 export default function Escrow({
   address,
@@ -13,46 +15,70 @@ export default function Escrow({
   signer,
   status,
   refunded,
+  createdAt,
   _id,
 }) {
   const [message, setMessage] = useState("");
-  const [actionCompleted, setActionCompleted] = useState(false);
-  const updateContractMutation = useMutation(updateContract);
+  const [actionCompleted, setActionCompleted] = useState(
+    status || refunded || false
+  ); // Initialize based on status or refunded
+  const updateContractMutation = useMutation(updateContract());
 
-  const handleApprove = async () => {
-    try {
-      const escrowContract = new ethers.Contract(address, ABI.abi, signer);
-      escrowContract.on("Approved", () => {
-        setMessage("✓ It's been approved!");
-        setActionCompleted(true); // Mark action as completed
-      });
-
-      await approve(escrowContract, signer);
-      await updateContractMutation.mutateAsync({
-        contractId: _id,
-        status: true,
-      });
-    } catch (error) {
-      console.error("Error in handleApprove:", error);
+  useEffect(() => {
+    if (status) {
+      setMessage("✓ It's been approved!");
+    } else if (refunded) {
+      setMessage("✓ It's been refunded!");
     }
+  }, [status, refunded]);
+
+  // handleApprove function with toast notifications
+  const handleApprove = async () => {
+    const escrowContract = new ethers.Contract(address, ABI.abi, signer);
+
+    escrowContract.once("Approved", () => {
+      setMessage("✓ It's been approved!");
+      setActionCompleted(true); // Mark action as completed
+    });
+
+    await toast.promise(
+      (async () => {
+        await approve(escrowContract, signer);
+        await updateContractMutation.mutateAsync({
+          contractId: _id,
+          status: true,
+        });
+      })(),
+      {
+        pending: "Approval in progress...",
+        success: "Contract approved successfully!",
+        error: "Approval failed. Please try again.",
+      }
+    );
   };
 
   const handleRefund = async () => {
-    try {
-      const escrowContract = new ethers.Contract(address, ABI.abi, signer);
-      escrowContract.on("Refunded", () => {
-        setMessage("✓ It's been refunded!");
-        setActionCompleted(true); // Mark action as completed
-      });
+    const escrowContract = new ethers.Contract(address, ABI.abi, signer);
 
-      await refund(escrowContract, signer);
-      await updateContractMutation.mutateAsync({
-        contractId: _id,
-        refunded: true,
-      });
-    } catch (error) {
-      console.error("Error in handleRefund:", error);
-    }
+    escrowContract.once("Refunded", () => {
+      setMessage("✓ It's been refunded!");
+      setActionCompleted(true); // Mark action as completed
+    });
+
+    await toast.promise(
+      (async () => {
+        await refund(escrowContract, signer);
+        await updateContractMutation.mutateAsync({
+          contractId: _id,
+          refunded: true,
+        });
+      })(),
+      {
+        pending: "Refund in progress...",
+        success: "Contract refunded successfully!",
+        error: "Refund failed. Please try again.",
+      }
+    );
   };
 
   return (
@@ -68,33 +94,33 @@ export default function Escrow({
         </li>
         <li>
           <div>Value</div>
-          <div>{value}</div>
+          <div>{ethers.utils.formatEther(value.toString())} ETH</div>
+        </li>
+        <li>
+          <div>Created: </div>
+          <div>{convertDate(createdAt)}</div>
         </li>
         <div>
           {!actionCompleted ? (
-            <>
-              {!refunded && !status && (
-                <button
-                  className="button"
-                  id={address}
-                  onClick={handleApprove}
-                  disabled={status === true}
-                >
-                  Approve
-                </button>
-              )}
-              {!status && !refunded && (
-                <button
-                  className="button"
-                  id={address}
-                  onClick={handleRefund}
-                  disabled={refunded === true}
-                  style={{ background: "#787838" }}
-                >
-                  Refund
-                </button>
-              )}
-            </>
+            <div className="complete">
+              <button
+                className="button"
+                id={address}
+                onClick={handleApprove}
+                disabled={status === true}
+              >
+                Approve
+              </button>
+              <button
+                className="button"
+                id={address}
+                onClick={handleRefund}
+                disabled={refunded === true}
+                style={{ background: "#787838" }}
+              >
+                Refund
+              </button>
+            </div>
           ) : (
             <p className="complete">{message}</p>
           )}

@@ -36,13 +36,13 @@ export const postContract = () => {
 export const updateContract = () => {
   return {
     mutationFn: async ({ contractId, status, refunded }) => {
-      console.log(status, refunded);
+      console.log({ status, refunded });
       let adjustObject = {};
       if (status) {
         adjustObject.status = true;
       }
       if (refunded) {
-        adjustObject.status = true;
+        adjustObject.refunded = true;
       }
       return await axiosInstance.patch(
         `/contracts/${contractId}`,
